@@ -1,9 +1,9 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader, Navigation } from "lucide-react";
+import { Loader, Navigation, FileJson } from "lucide-react";
 import { toast } from "sonner";
+import { Location, LocationsFile } from "@/types/location";
 
 interface LocationSearchProps {
   onLocationSelect: (name: string, lat: number, lng: number, address: string) => void;
@@ -14,6 +14,7 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
   const [isSearching, setIsSearching] = useState(false);
   const [userLocation, setUserLocation] = useState<GeolocationPosition | null>(null);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
@@ -72,6 +73,64 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
     );
   };
 
+  const handleFileSelect = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const data = JSON.parse(content) as LocationsFile;
+        
+        if (!data.locations || !Array.isArray(data.locations)) {
+          toast.error("Invalid JSON format. Expected 'locations' array.");
+          return;
+        }
+
+        const validLocations = data.locations.filter(loc => {
+          const isValid = loc.name && typeof loc.lat === 'number' && typeof loc.lng === 'number';
+          return isValid;
+        });
+
+        if (validLocations.length === 0) {
+          toast.error("No valid locations found in the file.");
+          return;
+        }
+
+        validLocations.forEach(loc => {
+          onLocationSelect(
+            loc.name,
+            loc.lat,
+            loc.lng,
+            loc.address || `${loc.name}, Imported location`
+          );
+        });
+
+        toast.success(`Imported ${validLocations.length} locations`);
+        
+        // Reset the file input so the same file can be selected again
+        if (event.target) {
+          event.target.value = '';
+        }
+
+      } catch (error) {
+        toast.error("Failed to parse JSON file. Please check the file format.");
+        console.error("File parse error:", error);
+      }
+    };
+
+    reader.readAsText(file);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-2">
@@ -98,25 +157,43 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
         </div>
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <Button 
+          onClick={getUserLocation} 
+          variant="outline" 
+          className="w-full"
+          disabled={isGettingLocation}
+        >
+          {isGettingLocation ? (
+            <Loader className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <Navigation className="h-4 w-4 mr-2" />
+          )}
+          Use my current location
+        </Button>
+
+        <Button
+          onClick={handleFileSelect}
+          variant="outline"
+          className="w-full"
+        >
+          <FileJson className="h-4 w-4 mr-2" />
+          Import JSON
+        </Button>
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          accept=".json"
+          className="hidden"
+        />
+      </div>
+
       <div className="flex items-center justify-between">
         <div className="flex-1 h-px bg-gray-200"></div>
         <span className="px-2 text-sm text-gray-500">OR</span>
         <div className="flex-1 h-px bg-gray-200"></div>
       </div>
-
-      <Button 
-        onClick={getUserLocation} 
-        variant="outline" 
-        className="w-full"
-        disabled={isGettingLocation}
-      >
-        {isGettingLocation ? (
-          <Loader className="h-4 w-4 mr-2 animate-spin" />
-        ) : (
-          <Navigation className="h-4 w-4 mr-2" />
-        )}
-        Use my current location
-      </Button>
     </div>
   );
 };

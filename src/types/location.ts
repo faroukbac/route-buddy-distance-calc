@@ -5,3 +5,7 @@ export interface Location {
   lng: number;
   address?: string;
 }
+
+export interface LocationsFile {
+  locations: Location[];
+}
