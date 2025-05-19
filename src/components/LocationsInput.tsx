@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,8 +21,7 @@ const LocationsInput = ({
   onClearLocations 
 }: LocationsInputProps) => {
   const [name, setName] = useState("");
-  const [latitude, setLatitude] = useState("");
-  const [longitude, setLongitude] = useState("");
+  const [coordinates, setCoordinates] = useState("");
   const [isManualMode, setIsManualMode] = useState(false);
 
   const handleAddLocation = () => {
@@ -33,8 +31,16 @@ const LocationsInput = ({
       return;
     }
 
-    const lat = parseFloat(latitude);
-    const lng = parseFloat(longitude);
+    // Parse coordinates from the single input field (format: "lat, lng")
+    const coordParts = coordinates.split(',').map(part => part.trim());
+    
+    if (coordParts.length !== 2) {
+      toast.error("Coordinates must be in the format 'latitude, longitude'");
+      return;
+    }
+
+    const lat = parseFloat(coordParts[0]);
+    const lng = parseFloat(coordParts[1]);
 
     if (isNaN(lat) || isNaN(lng)) {
       toast.error("Please enter valid latitude and longitude values");
@@ -56,8 +62,7 @@ const LocationsInput = ({
     
     // Clear inputs
     setName("");
-    setLatitude("");
-    setLongitude("");
+    setCoordinates("");
     
     toast.success(`Added location: ${name}`);
   };
@@ -92,8 +97,8 @@ const LocationsInput = ({
           </div>
           
           {isManualMode ? (
-            <div className="grid gap-3 grid-cols-1 md:grid-cols-5">
-              <div className="md:col-span-2">
+            <div className="grid gap-3 grid-cols-1 md:grid-cols-3">
+              <div>
                 <Label htmlFor="name">Location Name</Label>
                 <Input
                   id="name"
@@ -102,25 +107,16 @@ const LocationsInput = ({
                   onChange={(e) => setName(e.target.value)}
                 />
               </div>
-              <div>
-                <Label htmlFor="latitude">Latitude</Label>
+              <div className="md:col-span-2">
+                <Label htmlFor="coordinates">Coordinates (lat, lng)</Label>
                 <Input
-                  id="latitude"
-                  placeholder="e.g. 48.8566"
-                  value={latitude}
-                  onChange={(e) => setLatitude(e.target.value)}
+                  id="coordinates"
+                  placeholder="e.g. 35.33151545340188, -0.26259614606690074"
+                  value={coordinates}
+                  onChange={(e) => setCoordinates(e.target.value)}
                 />
               </div>
-              <div>
-                <Label htmlFor="longitude">Longitude</Label>
-                <Input
-                  id="longitude"
-                  placeholder="e.g. 2.3522"
-                  value={longitude}
-                  onChange={(e) => setLongitude(e.target.value)}
-                />
-              </div>
-              <div className="flex items-end">
+              <div className="md:col-span-3">
                 <Button 
                   onClick={handleAddLocation} 
                   className="w-full bg-blue-600 hover:bg-blue-700"
