@@ -1,9 +1,8 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash, MapPin, Import } from "lucide-react";
+import { Plus, Trash, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { Location } from "@/types/location";
 import LocationSearch from './LocationSearch';
@@ -71,64 +70,6 @@ const LocationsInput = ({
   const handleLocationSelect = (name: string, lat: number, lng: number, address: string) => {
     onAddLocation({ name, lat, lng, address });
   };
-  
-  const handleAddPresetLocations = () => {
-    const presetLocations = [
-      { name: "Aïn El Berd", coordinates: [35.37104738026323, -0.5148264491643942] },
-      { name: "Aïn Kada", coordinates: [35.2500, -0.6000] },
-      { name: "Aïn Thrid", coordinates: [35.285387122813944, -0.6752855301489279] },
-      { name: "Aïn Tindamine", coordinates: [34.690155547289706, -0.7213569771727453] },
-      { name: "Amarnas", coordinates: [35.142768864003905, -0.6249537153778579] },
-      { name: "Badredine El Mokrani", coordinates: [35.2400, -0.6100] },
-      { name: "Belarbi", coordinates: [35.1800, -0.6400] },
-      { name: "Ben Badis", coordinates: [35.1719, -0.7554] },
-      { name: "Benachiba Chelia", coordinates: [35.1900, -0.6300] },
-      { name: "Bir El Hammam", coordinates: [35.2600, -0.6000] },
-      { name: "Boudjebaa El Bordj", coordinates: [35.2700, -0.6100] },
-      { name: "Boukhanafis", coordinates: [35.2800, -0.6200] },
-      { name: "Chettouane Belaila", coordinates: [35.2900, -0.6300] },
-      { name: "Dhaya", coordinates: [35.3000, -0.6400] },
-      { name: "El Haçaiba", coordinates: [35.3100, -0.6500] },
-      { name: "Hassi Dahou", coordinates: [35.3200, -0.6600] },
-      { name: "Hassi Zehana", coordinates: [35.3300, -0.6700] },
-      { name: "Lamtar", coordinates: [35.3400, -0.6800] },
-      { name: "Makedra", coordinates: [35.0621, -0.5487] },
-      { name: "Marhoum", coordinates: [34.8000, -0.7000] },
-      { name: "M'Cid", coordinates: [35.3500, -0.6900] },
-      { name: "Merine", coordinates: [35.3600, -0.7000] },
-      { name: "Mezaourou", coordinates: [35.3700, -0.7100] },
-      { name: "Mostefa Ben Brahim", coordinates: [35.3800, -0.7200] },
-      { name: "Moulay Slissen", coordinates: [35.3900, -0.7300] },
-      { name: "Oued Sebaa", coordinates: [35.4000, -0.7400] },
-      { name: "Oued Sefioun", coordinates: [35.4100, -0.7500] },
-      { name: "Oued Taourira", coordinates: [35.4200, -0.7600] },
-      { name: "Ras El Ma", coordinates: [35.4300, -0.7700] },
-      { name: "Redjem Demouche", coordinates: [35.4400, -0.7800] },
-      { name: "Sehala Thaoura", coordinates: [35.4500, -0.7900] },
-      { name: "Sfisef", coordinates: [35.2344, -0.2434] },
-      { name: "Sidi Ali Benyoub", coordinates: [35.4600, -0.8000] },
-      { name: "Sidi Ali Boussidi", coordinates: [35.4700, -0.8100] },
-      { name: "Sidi Bel Abbès", coordinates: [35.1939, -0.6414] },
-      { name: "Sidi Brahim", coordinates: [35.4800, -0.8200] },
-      { name: "Sidi Chaib", coordinates: [35.4900, -0.8300] },
-      { name: "Sidi Daho des Zairs", coordinates: [35.5000, -0.8400] },
-      { name: "Sidi Hamadouche", coordinates: [35.5100, -0.8500] }
-    ];
-
-    // Add each location to the state
-    let addedCount = 0;
-    presetLocations.forEach(loc => {
-      onAddLocation({
-        name: loc.name,
-        lat: loc.coordinates[0],
-        lng: loc.coordinates[1],
-        address: `${loc.name}, Algeria`
-      });
-      addedCount++;
-    });
-
-    toast.success(`Added ${addedCount} preset locations`);
-  };
 
   return (
     <div className="space-y-6">
@@ -188,15 +129,6 @@ const LocationsInput = ({
             <LocationSearch onLocationSelect={handleLocationSelect} />
           )}
         </div>
-        
-        <Button 
-          onClick={handleAddPresetLocations} 
-          variant="secondary" 
-          className="w-full"
-        >
-          <Import className="h-4 w-4 mr-2" />
-          Add Algerian Locations (Sidi Bel Abbès Province)
-        </Button>
       </div>
 
       <div className="border rounded-md">
