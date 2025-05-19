@@ -3,9 +3,10 @@ import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash } from "lucide-react";
+import { Plus, Trash, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { Location } from "@/types/location";
+import LocationSearch from './LocationSearch';
 
 interface LocationsInputProps {
   locations: Location[];
@@ -23,6 +24,7 @@ const LocationsInput = ({
   const [name, setName] = useState("");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
+  const [isManualMode, setIsManualMode] = useState(false);
 
   const handleAddLocation = () => {
     // Validation
@@ -60,45 +62,76 @@ const LocationsInput = ({
     toast.success(`Added location: ${name}`);
   };
 
+  const handleLocationSelect = (name: string, lat: number, lng: number, address: string) => {
+    onAddLocation({ name, lat, lng, address });
+  };
+
   return (
     <div className="space-y-6">
       <div className="grid gap-4 py-2">
-        <div className="grid gap-3 grid-cols-1 md:grid-cols-5">
-          <div className="md:col-span-2">
-            <Label htmlFor="name">Location Name</Label>
-            <Input
-              id="name"
-              placeholder="Enter location name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
-          <div>
-            <Label htmlFor="latitude">Latitude</Label>
-            <Input
-              id="latitude"
-              placeholder="e.g. 48.8566"
-              value={latitude}
-              onChange={(e) => setLatitude(e.target.value)}
-            />
-          </div>
-          <div>
-            <Label htmlFor="longitude">Longitude</Label>
-            <Input
-              id="longitude"
-              placeholder="e.g. 2.3522"
-              value={longitude}
-              onChange={(e) => setLongitude(e.target.value)}
-            />
-          </div>
-          <div className="flex items-end">
+        <div className="mb-4">
+          <div className="flex justify-between mb-4">
             <Button 
-              onClick={handleAddLocation} 
-              className="w-full bg-blue-600 hover:bg-blue-700"
+              variant={isManualMode ? "outline" : "default"} 
+              onClick={() => setIsManualMode(false)}
+              size="sm"
+              className={!isManualMode ? "bg-blue-600 hover:bg-blue-700" : ""}
             >
-              <Plus className="h-4 w-4 mr-2" /> Add
+              <MapPin className="h-4 w-4 mr-2" />
+              Search Location
+            </Button>
+            <Button 
+              variant={isManualMode ? "default" : "outline"} 
+              onClick={() => setIsManualMode(true)}
+              size="sm"
+              className={isManualMode ? "bg-blue-600 hover:bg-blue-700" : ""}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Manual Entry
             </Button>
           </div>
+          
+          {isManualMode ? (
+            <div className="grid gap-3 grid-cols-1 md:grid-cols-5">
+              <div className="md:col-span-2">
+                <Label htmlFor="name">Location Name</Label>
+                <Input
+                  id="name"
+                  placeholder="Enter location name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="latitude">Latitude</Label>
+                <Input
+                  id="latitude"
+                  placeholder="e.g. 48.8566"
+                  value={latitude}
+                  onChange={(e) => setLatitude(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="longitude">Longitude</Label>
+                <Input
+                  id="longitude"
+                  placeholder="e.g. 2.3522"
+                  value={longitude}
+                  onChange={(e) => setLongitude(e.target.value)}
+                />
+              </div>
+              <div className="flex items-end">
+                <Button 
+                  onClick={handleAddLocation} 
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                >
+                  <Plus className="h-4 w-4 mr-2" /> Add
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <LocationSearch onLocationSelect={handleLocationSelect} />
+          )}
         </div>
       </div>
 
@@ -123,7 +156,14 @@ const LocationsInput = ({
               <tbody className="divide-y">
                 {locations.map((loc, index) => (
                   <tr key={index} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-left">{loc.name}</td>
+                    <td className="px-4 py-3 text-left">
+                      <div>
+                        <span className="font-medium">{loc.name}</span>
+                        {loc.address && (
+                          <p className="text-xs text-gray-500 mt-1">{loc.address}</p>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-4 py-3 text-center text-sm text-gray-600">
                       {loc.lat.toFixed(6)}, {loc.lng.toFixed(6)}
                     </td>
