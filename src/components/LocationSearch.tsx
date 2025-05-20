@@ -1,7 +1,8 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader, Navigation, FileJson, FileExcel } from "lucide-react";
+import { Loader, Navigation, FileJson, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import { Location, LocationsFile } from "@/types/location";
 import * as XLSX from 'xlsx';
@@ -287,7 +288,7 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
           variant="outline"
           className="w-full"
         >
-          <FileExcel className="h-4 w-4 mr-2" />
+          <FileSpreadsheet className="h-4 w-4 mr-2" />
           Import Excel
         </Button>
       </div>
