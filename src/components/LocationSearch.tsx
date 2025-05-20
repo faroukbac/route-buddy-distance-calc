@@ -163,20 +163,22 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
         }>(worksheet);
         
         if (excelData.length === 0) {
-          toast.error("No data found in Excel file");
+          toast.error("Aucune donnée trouvée dans le fichier Excel");
           return;
         }
 
         let importedCount = 0;
         let errorCount = 0;
 
-        excelData.forEach((row) => {
+        // Process each row individually
+        excelData.forEach((row, index) => {
           const locationName = row['Location Name'];
           const coordinatesStr = row['Coordinates (lat, lng)'];
           
           // Skip empty rows
           if (!locationName || !coordinatesStr) {
             errorCount++;
+            console.error(`Ligne ${index + 1}: Nom ou coordonnées manquants`);
             return;
           }
           
@@ -185,6 +187,7 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
           
           if (coordParts.length !== 2) {
             errorCount++;
+            console.error(`Ligne ${index + 1}: Format de coordonnées invalide: ${coordinatesStr}`);
             return;
           }
 
@@ -194,27 +197,30 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
           // Validate coordinates
           if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
             errorCount++;
+            console.error(`Ligne ${index + 1}: Coordonnées hors limites: lat=${lat}, lng=${lng}`);
             return;
           }
 
+          // Add this location to the map
           onLocationSelect(
             locationName,
             lat,
             lng,
-            `${locationName}, Imported location`
+            `${locationName}, Emplacement importé`
           );
           
           importedCount++;
+          console.log(`Ligne ${index + 1} importée: ${locationName} (${lat}, ${lng})`);
         });
 
         if (importedCount > 0) {
-          toast.success(`Imported ${importedCount} locations from Excel`);
+          toast.success(`${importedCount} emplacements importés depuis Excel`);
         } else {
-          toast.error("No valid locations found in Excel file");
+          toast.error("Aucun emplacement valide trouvé dans le fichier Excel");
         }
         
         if (errorCount > 0) {
-          toast.warning(`${errorCount} locations had invalid format and were skipped`);
+          toast.warning(`${errorCount} emplacements ont un format invalide et ont été ignorés`);
         }
         
         // Reset the file input
@@ -223,8 +229,8 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
         }
 
       } catch (error) {
-        toast.error("Failed to parse Excel file. Please check the file format.");
-        console.error("Excel parse error:", error);
+        toast.error("Échec de l'analyse du fichier Excel. Veuillez vérifier le format du fichier.");
+        console.error("Erreur d'analyse Excel:", error);
       }
     };
 
