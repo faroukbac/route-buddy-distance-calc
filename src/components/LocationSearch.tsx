@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader, Navigation, FileJson } from "lucide-react";
+import { Loader, Navigation, FileJson, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Location, LocationsFile } from "@/types/location";
 
@@ -14,7 +14,8 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
   const [isSearching, setIsSearching] = useState(false);
   const [userLocation, setUserLocation] = useState<GeolocationPosition | null>(null);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const jsonFileInputRef = useRef<HTMLInputElement>(null);
+  const csvFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
@@ -73,13 +74,19 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
     );
   };
 
-  const handleFileSelect = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
+  const handleJsonFileSelect = () => {
+    if (jsonFileInputRef.current) {
+      jsonFileInputRef.current.click();
     }
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCsvFileSelect = () => {
+    if (csvFileInputRef.current) {
+      csvFileInputRef.current.click();
+    }
+  };
+
+  const handleJsonFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) {
       return;
@@ -115,7 +122,7 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
           );
         });
 
-        toast.success(`Imported ${validLocations.length} locations`);
+        toast.success(`Imported ${validLocations.length} locations from JSON`);
         
         // Reset the file input so the same file can be selected again
         if (event.target) {
@@ -125,6 +132,86 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
       } catch (error) {
         toast.error("Failed to parse JSON file. Please check the file format.");
         console.error("File parse error:", error);
+      }
+    };
+
+    reader.readAsText(file);
+  };
+
+  const handleCsvFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const lines = content.split('\n').filter(line => line.trim() !== '');
+        
+        if (lines.length === 0) {
+          toast.error("CSV file is empty.");
+          return;
+        }
+        
+        let importedCount = 0;
+        let errorCount = 0;
+
+        // Process each line
+        lines.forEach((line, index) => {
+          // Skip header row if it exists (it should have text headers, not numbers)
+          const isHeader = index === 0 && !/^[\d\.\-\,\s]*$/.test(line);
+          if (isHeader) return;
+
+          // Split by comma
+          const parts = line.split(',').map(part => part.trim());
+          
+          // Expect: name, lat, lng, optional address
+          if (parts.length < 3) {
+            errorCount++;
+            return;
+          }
+
+          const name = parts[0].replace(/^"|"$/g, ''); // Remove quotes if present
+          const lat = parseFloat(parts[1]);
+          const lng = parseFloat(parts[2]);
+          const address = parts.length > 3 ? parts.slice(3).join(', ').replace(/^"|"$/g, '') : '';
+
+          // Validate coordinates
+          if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+            errorCount++;
+            return;
+          }
+
+          onLocationSelect(
+            name,
+            lat,
+            lng,
+            address || `${name}, Imported location`
+          );
+          
+          importedCount++;
+        });
+
+        if (importedCount > 0) {
+          toast.success(`Imported ${importedCount} locations from CSV`);
+        } else {
+          toast.error("No valid locations found in CSV");
+        }
+        
+        if (errorCount > 0) {
+          toast.warning(`${errorCount} locations had invalid format and were skipped`);
+        }
+        
+        // Reset the file input
+        if (event.target) {
+          event.target.value = '';
+        }
+
+      } catch (error) {
+        toast.error("Failed to parse CSV file. Please check the file format.");
+        console.error("CSV parse error:", error);
       }
     };
 
@@ -173,21 +260,41 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
         </Button>
 
         <Button
-          onClick={handleFileSelect}
+          onClick={handleJsonFileSelect}
           variant="outline"
           className="w-full"
         >
           <FileJson className="h-4 w-4 mr-2" />
           Import JSON
         </Button>
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileChange}
-          accept=".json"
-          className="hidden"
-        />
       </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-1 gap-2">
+        <Button
+          onClick={handleCsvFileSelect}
+          variant="outline"
+          className="w-full"
+        >
+          <Upload className="h-4 w-4 mr-2" />
+          Import CSV
+        </Button>
+      </div>
+
+      {/* Hidden file inputs */}
+      <input
+        type="file"
+        ref={jsonFileInputRef}
+        onChange={handleJsonFileChange}
+        accept=".json"
+        className="hidden"
+      />
+      <input
+        type="file"
+        ref={csvFileInputRef}
+        onChange={handleCsvFileChange}
+        accept=".csv"
+        className="hidden"
+      />
 
       <div className="flex items-center justify-between">
         <div className="flex-1 h-px bg-gray-200"></div>
