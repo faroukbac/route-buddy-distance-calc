@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader, Navigation, FileJson, Upload } from "lucide-react";
+import { Loader, Navigation, FileJson, FileExcel } from "lucide-react";
 import { toast } from "sonner";
 import { Location, LocationsFile } from "@/types/location";
+import * as XLSX from 'xlsx';
 
 interface LocationSearchProps {
   onLocationSelect: (name: string, lat: number, lng: number, address: string) => void;
@@ -15,7 +16,7 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
   const [userLocation, setUserLocation] = useState<GeolocationPosition | null>(null);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const jsonFileInputRef = useRef<HTMLInputElement>(null);
-  const csvFileInputRef = useRef<HTMLInputElement>(null);
+  const excelFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
@@ -80,9 +81,9 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
     }
   };
 
-  const handleCsvFileSelect = () => {
-    if (csvFileInputRef.current) {
-      csvFileInputRef.current.click();
+  const handleExcelFileSelect = () => {
+    if (excelFileInputRef.current) {
+      excelFileInputRef.current.click();
     }
   };
 
@@ -138,7 +139,7 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
     reader.readAsText(file);
   };
 
-  const handleCsvFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleExcelFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) {
       return;
@@ -147,36 +148,47 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const content = e.target?.result as string;
-        const lines = content.split('\n').filter(line => line.trim() !== '');
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
         
-        if (lines.length === 0) {
-          toast.error("CSV file is empty.");
+        // Get the first worksheet
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        
+        // Convert the worksheet to JSON
+        const excelData = XLSX.utils.sheet_to_json<{ 
+          'Location Name': string, 
+          'Coordinates (lat, lng)': string 
+        }>(worksheet);
+        
+        if (excelData.length === 0) {
+          toast.error("No data found in Excel file");
           return;
         }
-        
+
         let importedCount = 0;
         let errorCount = 0;
 
-        // Process each line
-        lines.forEach((line, index) => {
-          // Skip header row if it exists (it should have text headers, not numbers)
-          const isHeader = index === 0 && !/^[\d\.\-\,\s]*$/.test(line);
-          if (isHeader) return;
-
-          // Split by comma
-          const parts = line.split(',').map(part => part.trim());
+        excelData.forEach((row) => {
+          const locationName = row['Location Name'];
+          const coordinatesStr = row['Coordinates (lat, lng)'];
           
-          // Expect: name, lat, lng, optional address
-          if (parts.length < 3) {
+          // Skip empty rows
+          if (!locationName || !coordinatesStr) {
+            errorCount++;
+            return;
+          }
+          
+          // Parse coordinates
+          const coordParts = coordinatesStr.split(',').map(part => part.trim());
+          
+          if (coordParts.length !== 2) {
             errorCount++;
             return;
           }
 
-          const name = parts[0].replace(/^"|"$/g, ''); // Remove quotes if present
-          const lat = parseFloat(parts[1]);
-          const lng = parseFloat(parts[2]);
-          const address = parts.length > 3 ? parts.slice(3).join(', ').replace(/^"|"$/g, '') : '';
+          const lat = parseFloat(coordParts[0]);
+          const lng = parseFloat(coordParts[1]);
 
           // Validate coordinates
           if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
@@ -185,19 +197,19 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
           }
 
           onLocationSelect(
-            name,
+            locationName,
             lat,
             lng,
-            address || `${name}, Imported location`
+            `${locationName}, Imported location`
           );
           
           importedCount++;
         });
 
         if (importedCount > 0) {
-          toast.success(`Imported ${importedCount} locations from CSV`);
+          toast.success(`Imported ${importedCount} locations from Excel`);
         } else {
-          toast.error("No valid locations found in CSV");
+          toast.error("No valid locations found in Excel file");
         }
         
         if (errorCount > 0) {
@@ -210,12 +222,12 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
         }
 
       } catch (error) {
-        toast.error("Failed to parse CSV file. Please check the file format.");
-        console.error("CSV parse error:", error);
+        toast.error("Failed to parse Excel file. Please check the file format.");
+        console.error("Excel parse error:", error);
       }
     };
 
-    reader.readAsText(file);
+    reader.readAsArrayBuffer(file);
   };
 
   return (
@@ -271,12 +283,12 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
 
       <div className="grid grid-cols-1 md:grid-cols-1 gap-2">
         <Button
-          onClick={handleCsvFileSelect}
+          onClick={handleExcelFileSelect}
           variant="outline"
           className="w-full"
         >
-          <Upload className="h-4 w-4 mr-2" />
-          Import CSV
+          <FileExcel className="h-4 w-4 mr-2" />
+          Import Excel
         </Button>
       </div>
 
@@ -290,9 +302,9 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
       />
       <input
         type="file"
-        ref={csvFileInputRef}
-        onChange={handleCsvFileChange}
-        accept=".csv"
+        ref={excelFileInputRef}
+        onChange={handleExcelFileChange}
+        accept=".xlsx,.xls"
         className="hidden"
       />
 
