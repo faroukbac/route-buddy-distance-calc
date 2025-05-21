@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -166,46 +167,63 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
           return;
         }
 
-        // Sélectionner uniquement la première ligne
-        const row = excelData[0];
-        const locationName = row['Location Name'];
-        const coordinatesStr = row['Coordinates (lat, lng)'];
-        
-        // Vérifier si la ligne est valide
-        if (!locationName || !coordinatesStr) {
-          toast.error("Ligne invalide: nom ou coordonnées manquants");
-          return;
+        let importedCount = 0;
+        let errorCount = 0;
+
+        // Process each row individually
+        excelData.forEach((row, index) => {
+          const locationName = row['Location Name'];
+          const coordinatesStr = row['Coordinates (lat, lng)'];
+          
+          // Skip empty rows
+          if (!locationName || !coordinatesStr) {
+            errorCount++;
+            console.error(`Ligne ${index + 1}: Nom ou coordonnées manquants`);
+            return;
+          }
+          
+          // Parse coordinates
+          const coordParts = coordinatesStr.split(',').map(part => part.trim());
+          
+          if (coordParts.length !== 2) {
+            errorCount++;
+            console.error(`Ligne ${index + 1}: Format de coordonnées invalide: ${coordinatesStr}`);
+            return;
+          }
+
+          const lat = parseFloat(coordParts[0]);
+          const lng = parseFloat(coordParts[1]);
+
+          // Validate coordinates
+          if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+            errorCount++;
+            console.error(`Ligne ${index + 1}: Coordonnées hors limites: lat=${lat}, lng=${lng}`);
+            return;
+          }
+
+          // Add this location to the map
+          onLocationSelect(
+            locationName,
+            lat,
+            lng,
+            `${locationName}, Emplacement importé`
+          );
+          
+          importedCount++;
+          console.log(`Ligne ${index + 1} importée: ${locationName} (${lat}, ${lng})`);
+        });
+
+        if (importedCount > 0) {
+          toast.success(`${importedCount} emplacements importés depuis Excel`);
+        } else {
+          toast.error("Aucun emplacement valide trouvé dans le fichier Excel");
         }
         
-        // Analyser les coordonnées
-        const coordParts = coordinatesStr.split(',').map(part => part.trim());
-        
-        if (coordParts.length !== 2) {
-          toast.error(`Format de coordonnées invalide: ${coordinatesStr}`);
-          return;
+        if (errorCount > 0) {
+          toast.warning(`${errorCount} emplacements ont un format invalide et ont été ignorés`);
         }
-
-        const lat = parseFloat(coordParts[0]);
-        const lng = parseFloat(coordParts[1]);
-
-        // Valider les coordonnées
-        if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-          toast.error(`Coordonnées hors limites: lat=${lat}, lng=${lng}`);
-          return;
-        }
-
-        // Ajouter cette localisation à la carte
-        onLocationSelect(
-          locationName,
-          lat,
-          lng,
-          `${locationName}, Emplacement importé`
-        );
         
-        toast.success(`Emplacement "${locationName}" importé avec succès`);
-        console.log(`Emplacement importé: ${locationName} (${lat}, ${lng})`);
-        
-        // Réinitialiser l'input de fichier
+        // Reset the file input
         if (event.target) {
           event.target.value = '';
         }
