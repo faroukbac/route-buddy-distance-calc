@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -170,7 +171,7 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
         let errorCount = 0;
 
         // Process each row individually
-        for (const row of excelData) {
+        excelData.forEach(row => {
           const locationName = row['Location Name'];
           const coordinatesStr = row['Coordinates (lat, lng)'];
           
@@ -178,7 +179,7 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
           if (!locationName || !coordinatesStr) {
             errorCount++;
             console.error(`Ligne: Nom ou coordonnées manquants`);
-            continue;
+            return;
           }
           
           // Parse coordinates
@@ -187,7 +188,7 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
           if (coordParts.length !== 2) {
             errorCount++;
             console.error(`Ligne: Format de coordonnées invalide: ${coordinatesStr}`);
-            continue;
+            return;
           }
 
           const lat = parseFloat(coordParts[0]);
@@ -197,10 +198,10 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
           if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
             errorCount++;
             console.error(`Ligne: Coordonnées hors limites: lat=${lat}, lng=${lng}`);
-            continue;
+            return;
           }
 
-          // Add this location to the map - this is where the fix is needed
+          // Add this location to the map
           onLocationSelect(
             locationName,
             lat,
@@ -210,7 +211,7 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
           
           importedCount++;
           console.log(`Ligne importée: ${locationName} (${lat}, ${lng})`);
-        }
+        });
 
         if (importedCount > 0) {
           toast.success(`${importedCount} emplacements importés depuis Excel`);
