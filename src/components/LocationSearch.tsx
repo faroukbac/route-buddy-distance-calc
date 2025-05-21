@@ -1,10 +1,9 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader, Navigation, FileJson, FileSpreadsheet } from "lucide-react";
+import { Loader, Navigation, FileJson, FileSpreadsheet, MapPin } from "lucide-react";
 import { toast } from "sonner";
-import { Location, LocationsFile } from "@/types/location";
+import { Location, LocationsFile, algeriaLocations } from "@/types/location";
 import * as XLSX from 'xlsx';
 
 interface LocationSearchProps {
@@ -237,6 +236,26 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
     reader.readAsArrayBuffer(file);
   };
 
+  const importAlgeriaLocations = () => {
+    if (algeriaLocations.length === 0) {
+      toast.error("No predefined locations available");
+      return;
+    }
+
+    let importCount = 0;
+    algeriaLocations.forEach(location => {
+      onLocationSelect(
+        location.name,
+        location.lat,
+        location.lng,
+        `${location.name}, Algeria`
+      );
+      importCount++;
+    });
+
+    toast.success(`Imported ${importCount} locations from Algeria`);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-2">
@@ -288,7 +307,7 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-1 gap-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         <Button
           onClick={handleExcelFileSelect}
           variant="outline"
@@ -296,6 +315,15 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
         >
           <FileSpreadsheet className="h-4 w-4 mr-2" />
           Import Excel
+        </Button>
+        
+        <Button
+          onClick={importAlgeriaLocations}
+          variant="outline"
+          className="w-full"
+        >
+          <MapPin className="h-4 w-4 mr-2" />
+          Import Algeria Locations
         </Button>
       </div>
 
