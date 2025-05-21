@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -170,15 +171,15 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
         let errorCount = 0;
 
         // Process each row individually
-        excelData.forEach((row, index) => {
+        for (const row of excelData) {
           const locationName = row['Location Name'];
           const coordinatesStr = row['Coordinates (lat, lng)'];
           
           // Skip empty rows
           if (!locationName || !coordinatesStr) {
             errorCount++;
-            console.error(`Ligne ${index + 1}: Nom ou coordonnées manquants`);
-            return;
+            console.error(`Ligne: Nom ou coordonnées manquants`);
+            continue;
           }
           
           // Parse coordinates
@@ -186,8 +187,8 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
           
           if (coordParts.length !== 2) {
             errorCount++;
-            console.error(`Ligne ${index + 1}: Format de coordonnées invalide: ${coordinatesStr}`);
-            return;
+            console.error(`Ligne: Format de coordonnées invalide: ${coordinatesStr}`);
+            continue;
           }
 
           const lat = parseFloat(coordParts[0]);
@@ -196,11 +197,11 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
           // Validate coordinates
           if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
             errorCount++;
-            console.error(`Ligne ${index + 1}: Coordonnées hors limites: lat=${lat}, lng=${lng}`);
-            return;
+            console.error(`Ligne: Coordonnées hors limites: lat=${lat}, lng=${lng}`);
+            continue;
           }
 
-          // Add this location to the map
+          // Add this location to the map - this is where the fix is needed
           onLocationSelect(
             locationName,
             lat,
@@ -209,8 +210,8 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
           );
           
           importedCount++;
-          console.log(`Ligne ${index + 1} importée: ${locationName} (${lat}, ${lng})`);
-        });
+          console.log(`Ligne importée: ${locationName} (${lat}, ${lng})`);
+        }
 
         if (importedCount > 0) {
           toast.success(`${importedCount} emplacements importés depuis Excel`);
