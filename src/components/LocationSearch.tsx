@@ -157,10 +157,7 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
         const worksheet = workbook.Sheets[firstSheetName];
         
         // Convert the worksheet to JSON
-        const excelData = XLSX.utils.sheet_to_json<{ 
-          'Location Name': string, 
-          'Coordinates (lat, lng)': string 
-        }>(worksheet);
+        const excelData = XLSX.utils.sheet_to_json(worksheet, { header: 'A' });
         
         if (excelData.length === 0) {
           toast.error("Aucune donnée trouvée dans le fichier Excel");
@@ -170,25 +167,28 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
         let importedCount = 0;
         let errorCount = 0;
 
-        // Process each row individually
-        excelData.forEach(row => {
-          const locationName = row['Location Name'];
-          const coordinatesStr = row['Coordinates (lat, lng)'];
+        // Skip header row if present
+        const startRow = typeof excelData[0].A === 'string' && !isNaN(Number(excelData[0].B)) ? 0 : 1;
+        
+        // Process each row
+        for (let i = startRow; i < excelData.length; i++) {
+          const row = excelData[i];
+          const locationName = row.A;
+          const coordinatesStr = row.B;
           
-          // Skip empty rows
           if (!locationName || !coordinatesStr) {
             errorCount++;
-            console.error(`Ligne: Nom ou coordonnées manquants`);
-            return;
+            console.error(`Ligne ${i+1}: Nom ou coordonnées manquants`);
+            continue;
           }
           
           // Parse coordinates
-          const coordParts = coordinatesStr.split(',').map(part => part.trim());
+          const coordParts = String(coordinatesStr).split(',').map(part => part.trim());
           
           if (coordParts.length !== 2) {
             errorCount++;
-            console.error(`Ligne: Format de coordonnées invalide: ${coordinatesStr}`);
-            return;
+            console.error(`Ligne ${i+1}: Format de coordonnées invalide: ${coordinatesStr}`);
+            continue;
           }
 
           const lat = parseFloat(coordParts[0]);
@@ -197,13 +197,13 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
           // Validate coordinates
           if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
             errorCount++;
-            console.error(`Ligne: Coordonnées hors limites: lat=${lat}, lng=${lng}`);
-            return;
+            console.error(`Ligne ${i+1}: Coordonnées hors limites: lat=${lat}, lng=${lng}`);
+            continue;
           }
 
           // Add this location to the map
           onLocationSelect(
-            locationName,
+            String(locationName),
             lat,
             lng,
             `${locationName}, Emplacement importé`
@@ -211,7 +211,7 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
           
           importedCount++;
           console.log(`Ligne importée: ${locationName} (${lat}, ${lng})`);
-        });
+        }
 
         if (importedCount > 0) {
           toast.success(`${importedCount} emplacements importés depuis Excel`);
