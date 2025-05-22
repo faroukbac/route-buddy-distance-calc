@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Location } from '@/types/location';
 
 // Simulated API function to calculate distances using the OpenRouteService API
@@ -129,14 +129,14 @@ export const useLocationData = () => {
   };
 
   // Charger l'historique depuis le localStorage au montage du composant
-  useState(() => {
+  useEffect(() => {
     try {
       const savedCalculations = JSON.parse(localStorage.getItem('calculationHistory') || '[]');
       setCalculationHistory(savedCalculations);
     } catch (error) {
       console.error("Error loading calculation history:", error);
     }
-  });
+  }, []); // Empty dependency array so it only runs once on mount
 
   return {
     locations,
