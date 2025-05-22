@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +7,7 @@ import { Plus, Trash, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { Location } from "@/types/location";
 import LocationSearch from './LocationSearch';
+import LocationConfirmDialog from './LocationConfirmDialog';
 
 interface LocationsInputProps {
   locations: Location[];
@@ -23,11 +25,13 @@ const LocationsInput = ({
   const [name, setName] = useState("");
   const [coordinates, setCoordinates] = useState("");
   const [isManualMode, setIsManualMode] = useState(false);
+  const [pendingLocation, setPendingLocation] = useState<Location | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const handleAddLocation = () => {
     // Validation
     if (!name.trim()) {
-      toast.error("Please enter a location name");
+      toast.error("Veuillez saisir un nom d'emplacement");
       return;
     }
 
@@ -35,7 +39,7 @@ const LocationsInput = ({
     const coordParts = coordinates.split(',').map(part => part.trim());
     
     if (coordParts.length !== 2) {
-      toast.error("Coordinates must be in the format 'latitude, longitude'");
+      toast.error("Les coordonnées doivent être au format 'latitude, longitude'");
       return;
     }
 
@@ -43,32 +47,53 @@ const LocationsInput = ({
     const lng = parseFloat(coordParts[1]);
 
     if (isNaN(lat) || isNaN(lng)) {
-      toast.error("Please enter valid latitude and longitude values");
+      toast.error("Veuillez saisir des valeurs de latitude et longitude valides");
       return;
     }
 
     if (lat < -90 || lat > 90) {
-      toast.error("Latitude must be between -90 and 90");
+      toast.error("La latitude doit être comprise entre -90 et 90");
       return;
     }
 
     if (lng < -180 || lng > 180) {
-      toast.error("Longitude must be between -180 and 180");
+      toast.error("La longitude doit être comprise entre -180 et 180");
       return;
     }
 
-    // Add location
-    onAddLocation({ name, lat, lng });
-    
-    // Clear inputs
-    setName("");
-    setCoordinates("");
-    
-    toast.success(`Added location: ${name}`);
+    // Set pending location and show confirmation dialog
+    setPendingLocation({ name, lat, lng });
+    setShowConfirmDialog(true);
   };
 
   const handleLocationSelect = (name: string, lat: number, lng: number, address: string) => {
-    onAddLocation({ name, lat, lng, address });
+    // Set pending location and show confirmation dialog
+    setPendingLocation({ name, lat, lng, address });
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmLocation = () => {
+    if (pendingLocation) {
+      onAddLocation(pendingLocation);
+      
+      // Clear inputs if it was manual entry
+      if (isManualMode) {
+        setName("");
+        setCoordinates("");
+      }
+      
+      // Close dialog and clear pending location
+      setShowConfirmDialog(false);
+      setPendingLocation(null);
+      
+      toast.success(`Emplacement ajouté: ${pendingLocation.name}`);
+    }
+  };
+
+  const handleCancelLocation = () => {
+    // Close dialog and clear pending location
+    setShowConfirmDialog(false);
+    setPendingLocation(null);
   };
 
   return (
@@ -83,7 +108,7 @@ const LocationsInput = ({
               className={!isManualMode ? "bg-blue-600 hover:bg-blue-700" : ""}
             >
               <MapPin className="h-4 w-4 mr-2" />
-              Search Location
+              Rechercher un emplacement
             </Button>
             <Button 
               variant={isManualMode ? "default" : "outline"} 
@@ -92,26 +117,26 @@ const LocationsInput = ({
               className={isManualMode ? "bg-blue-600 hover:bg-blue-700" : ""}
             >
               <Plus className="h-4 w-4 mr-2" />
-              Manual Entry
+              Saisie manuelle
             </Button>
           </div>
           
           {isManualMode ? (
             <div className="grid gap-3 grid-cols-1 md:grid-cols-3">
               <div>
-                <Label htmlFor="name">Location Name</Label>
+                <Label htmlFor="name">Nom de l'emplacement</Label>
                 <Input
                   id="name"
-                  placeholder="Enter location name"
+                  placeholder="Entrer le nom de l'emplacement"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
               </div>
               <div className="md:col-span-2">
-                <Label htmlFor="coordinates">Coordinates (lat, lng)</Label>
+                <Label htmlFor="coordinates">Coordonnées (lat, lng)</Label>
                 <Input
                   id="coordinates"
-                  placeholder="e.g. 35.33151545340188, -0.26259614606690074"
+                  placeholder="ex: 35.33151545340188, -0.26259614606690074"
                   value={coordinates}
                   onChange={(e) => setCoordinates(e.target.value)}
                 />
@@ -121,7 +146,7 @@ const LocationsInput = ({
                   onClick={handleAddLocation} 
                   className="w-full bg-blue-600 hover:bg-blue-700"
                 >
-                  <Plus className="h-4 w-4 mr-2" /> Add
+                  <Plus className="h-4 w-4 mr-2" /> Ajouter
                 </Button>
               </div>
             </div>
@@ -133,19 +158,19 @@ const LocationsInput = ({
 
       <div className="border rounded-md">
         <div className="bg-blue-50 px-4 py-2 border-b">
-          <h3 className="font-medium">Added Locations ({locations.length})</h3>
+          <h3 className="font-medium">Emplacements ajoutés ({locations.length})</h3>
         </div>
         <div className="overflow-y-auto max-h-80">
           {locations.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              No locations added yet. Add your first location above.
+              Aucun emplacement ajouté. Ajoutez votre premier emplacement ci-dessus.
             </div>
           ) : (
             <table className="w-full">
               <thead className="bg-gray-50 text-xs text-gray-700">
                 <tr>
-                  <th className="px-4 py-2 text-left">Name</th>
-                  <th className="px-4 py-2 text-center">Coordinates</th>
+                  <th className="px-4 py-2 text-left">Nom</th>
+                  <th className="px-4 py-2 text-center">Coordonnées</th>
                   <th className="px-4 py-2 text-right">Action</th>
                 </tr>
               </thead>
@@ -180,6 +205,15 @@ const LocationsInput = ({
           )}
         </div>
       </div>
+
+      {/* Confirmation Dialog */}
+      <LocationConfirmDialog 
+        location={pendingLocation}
+        open={showConfirmDialog}
+        onOpenChange={setShowConfirmDialog}
+        onConfirm={handleConfirmLocation}
+        onCancel={handleCancelLocation}
+      />
     </div>
   );
 };
