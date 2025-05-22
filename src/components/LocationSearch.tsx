@@ -11,6 +11,13 @@ interface LocationSearchProps {
   onLocationSelect: (name: string, lat: number, lng: number, address: string) => void;
 }
 
+// Define an interface for Excel row data
+interface ExcelRow {
+  A: string | number;
+  B: string | number;
+  [key: string]: unknown; // To support other potential columns
+}
+
 const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -156,8 +163,8 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
         
-        // Convert the worksheet to JSON
-        const excelData = XLSX.utils.sheet_to_json(worksheet, { header: 'A' });
+        // Convert the worksheet to JSON with typed output
+        const excelData = XLSX.utils.sheet_to_json<ExcelRow>(worksheet, { header: 'A' });
         
         if (excelData.length === 0) {
           toast.error("Aucune donnée trouvée dans le fichier Excel");
@@ -167,12 +174,16 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
         let importedCount = 0;
         let errorCount = 0;
 
-        // Skip header row if present
-        const startRow = typeof excelData[0].A === 'string' && !isNaN(Number(excelData[0].B)) ? 0 : 1;
+        // Skip header row if present - check if first row has numeric coordinates
+        const startRow = typeof excelData[0]?.A === 'string' && 
+                         typeof excelData[0]?.B === 'string' && 
+                         !isNaN(parseFloat(String(excelData[0]?.B).split(',')[0])) ? 0 : 1;
         
         // Process each row
         for (let i = startRow; i < excelData.length; i++) {
           const row = excelData[i];
+          if (!row) continue;
+          
           const locationName = row.A;
           const coordinatesStr = row.B;
           
@@ -193,7 +204,7 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
 
           const lat = parseFloat(coordParts[0]);
           const lng = parseFloat(coordParts[1]);
-
+          
           // Validate coordinates
           if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
             errorCount++;
@@ -354,3 +365,4 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
 };
 
 export default LocationSearch;
+
