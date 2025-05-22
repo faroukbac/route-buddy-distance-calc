@@ -69,6 +69,11 @@ export const useLocationData = () => {
   const [locations, setLocations] = useState<Location[]>([]);
   const [distanceMatrix, setDistanceMatrix] = useState<number[][] | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [calculationHistory, setCalculationHistory] = useState<{
+    date: string;
+    locations: Location[];
+    distanceMatrix: number[][];
+  }[]>([]);
 
   const addLocation = (location: Location) => {
     setLocations([...locations, location]);
@@ -99,6 +104,21 @@ export const useLocationData = () => {
     try {
       const matrix = await calculateRouteDistances(locations);
       setDistanceMatrix(matrix);
+      
+      // Sauvegarder le calcul dans l'historique local
+      const newCalculation = {
+        date: new Date().toISOString(),
+        locations: [...locations],
+        distanceMatrix: matrix
+      };
+      setCalculationHistory([...calculationHistory, newCalculation]);
+      
+      // Ici, nous ajouterions la sauvegarde dans une base de données Supabase
+      // Pour l'instant, nous sauvegardons dans localStorage comme solution temporaire
+      const savedCalculations = JSON.parse(localStorage.getItem('calculationHistory') || '[]');
+      savedCalculations.push(newCalculation);
+      localStorage.setItem('calculationHistory', JSON.stringify(savedCalculations));
+      
       return matrix;
     } catch (error) {
       console.error("Error calculating distances:", error);
@@ -108,6 +128,16 @@ export const useLocationData = () => {
     }
   };
 
+  // Charger l'historique depuis le localStorage au montage du composant
+  useState(() => {
+    try {
+      const savedCalculations = JSON.parse(localStorage.getItem('calculationHistory') || '[]');
+      setCalculationHistory(savedCalculations);
+    } catch (error) {
+      console.error("Error loading calculation history:", error);
+    }
+  });
+
   return {
     locations,
     addLocation,
@@ -115,6 +145,7 @@ export const useLocationData = () => {
     clearLocations,
     distanceMatrix,
     calculateDistances,
-    isCalculating
+    isCalculating,
+    calculationHistory
   };
 };
