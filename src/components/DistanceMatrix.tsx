@@ -33,7 +33,7 @@ const DistanceMatrix = ({ locations, distanceMatrix }: DistanceMatrixProps) => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="min-w-[120px] bg-blue-50 font-medium">To \ From</TableHead>
+              <TableHead className="min-w-[120px] bg-blue-50 font-medium">From \ To</TableHead>
               {locations.map((location, index) => (
                 <TableHead key={index} className="min-w-[120px] bg-blue-50 font-medium">
                   {location.name}
@@ -42,17 +42,17 @@ const DistanceMatrix = ({ locations, distanceMatrix }: DistanceMatrixProps) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {locations.map((toLocation, rowIndex) => (
+            {locations.map((fromLocation, rowIndex) => (
               <TableRow key={rowIndex}>
                 <TableCell className="font-medium bg-blue-50">
-                  {toLocation.name}
+                  {fromLocation.name}
                 </TableCell>
-                {locations.map((fromLocation, colIndex) => (
+                {locations.map((toLocation, colIndex) => (
                   <TableCell 
                     key={colIndex}
                     className={rowIndex === colIndex ? "bg-gray-100" : ""}
                   >
-                    {rowIndex === colIndex ? "-" : distanceMatrix[colIndex][rowIndex].toFixed(2)}
+                    {rowIndex === colIndex ? "-" : distanceMatrix[rowIndex][colIndex].toFixed(2)}
                   </TableCell>
                 ))}
               </TableRow>
