@@ -5,6 +5,19 @@ import { MapContainer, TileLayer, Marker, Polyline, Popup } from "react-leaflet"
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
+// Fix for default leaflet marker icons
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+
+let DefaultIcon = L.icon({
+  iconUrl: icon,
+  shadowUrl: iconShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41]
+});
+
+L.Marker.prototype.options.icon = DefaultIcon;
+
 interface Point {
   name: string;
   lat: number;
@@ -78,12 +91,6 @@ function App() {
 
   const totalDistance = distances.reduce((sum, d) => sum + d, 0).toFixed(2);
 
-  const defaultIcon = new L.Icon({
-    iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-  });
-
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-4">Calculateur de Distance (Excel + Carte)</h1>
@@ -103,18 +110,27 @@ function App() {
             ))}
           </ul>
 
-          <MapContainer center={[points[0].lat, points[0].lng]} zoom={13} style={{ height: "500px", width: "100%" }}>
-            <TileLayer
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution='© OpenStreetMap contributors'
-            />
-            {points.map((point, i) => (
-              <Marker key={i} position={[point.lat, point.lng]} icon={defaultIcon}>
-                <Popup>{point.name}</Popup>
-              </Marker>
-            ))}
-            <Polyline positions={points.map((p) => [p.lat, p.lng])} color="blue" />
-          </MapContainer>
+          <div style={{ height: "500px", width: "100%" }}>
+            <MapContainer 
+              style={{ height: "100%", width: "100%" }}
+              center={[points[0].lat, points[0].lng] as [number, number]} 
+              zoom={13}
+            >
+              <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution="&copy; OpenStreetMap contributors"
+              />
+              {points.map((point, i) => (
+                <Marker key={i} position={[point.lat, point.lng] as [number, number]}>
+                  <Popup>{point.name}</Popup>
+                </Marker>
+              ))}
+              <Polyline 
+                pathOptions={{ color: 'blue' }} 
+                positions={points.map((p) => [p.lat, p.lng] as [number, number])}
+              />
+            </MapContainer>
+          </div>
         </>
       )}
     </div>
