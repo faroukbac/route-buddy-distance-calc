@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import * as XLSX from "xlsx";
 import { MapContainer, TileLayer, Marker, Polyline, Popup } from "react-leaflet";
@@ -44,8 +45,8 @@ function App() {
         const parsedPoints: Point[] = [];
         rows.slice(1).forEach((row, index) => {
           const name = row[0]?.toString().trim(); // "Location Name"
-          const coordsStr = row[1]?.toString().trim(); // "Coordinates (lat, lng)"
-
+          const lat = parseFloat(row[1]?.toString().replace(',', '.'));
+          const lng = parseFloat(row[2]?.toString().replace(',', '.'));
 
           if (!name || isNaN(lat) || isNaN(lng)) {
             console.warn(`Ligne ignorée : ${index + 2}`, row);
