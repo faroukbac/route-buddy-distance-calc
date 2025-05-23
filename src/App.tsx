@@ -1,7 +1,22 @@
 
 import { useState } from "react";
 import * as XLSX from "xlsx";
-import RouteMap from "./components/RouteMap";
+import { MapContainer, TileLayer, Marker, Polyline, Popup } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+
+// Fix for default leaflet marker icons
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+
+let DefaultIcon = L.icon({
+  iconUrl: icon,
+  shadowUrl: iconShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41]
+});
+
+L.Marker.prototype.options.icon = DefaultIcon;
 
 interface Point {
   name: string;
@@ -95,7 +110,27 @@ function App() {
             ))}
           </ul>
 
-          <RouteMap points={points} />
+          <div style={{ height: "500px", width: "100%" }}>
+            <MapContainer 
+              style={{ height: "100%", width: "100%" }}
+              center={[points[0].lat, points[0].lng] as [number, number]} 
+              zoom={13}
+            >
+              <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution="&copy; OpenStreetMap contributors"
+              />
+              {points.map((point, i) => (
+                <Marker key={i} position={[point.lat, point.lng] as [number, number]}>
+                  <Popup>{point.name}</Popup>
+                </Marker>
+              ))}
+              <Polyline 
+                pathOptions={{ color: 'blue' }} 
+                positions={points.map((p) => [p.lat, p.lng] as [number, number])}
+              />
+            </MapContainer>
+          </div>
         </>
       )}
     </div>
