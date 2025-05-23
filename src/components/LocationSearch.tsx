@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,9 @@ interface LocationSearchProps {
 
 // Define an interface for Excel row data
 interface ExcelRow {
-  [key: string]: unknown;
+  A: string | number;
+  B: string | number;
+  [key: string]: unknown; // To support other potential columns
 }
 
 const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
@@ -160,8 +163,8 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
         
-        // Convert the worksheet to JSON
-        const excelData = XLSX.utils.sheet_to_json<ExcelRow>(worksheet);
+        // Convert the worksheet to JSON with typed output
+        const excelData = XLSX.utils.sheet_to_json<ExcelRow>(worksheet, { header: 'A' });
         
         if (excelData.length === 0) {
           toast.error("Aucune donnée trouvée dans le fichier Excel");
@@ -171,24 +174,23 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
         let importedCount = 0;
         let errorCount = 0;
 
+        // Skip header row if present - check if first row has numeric coordinates
+        const startRow = typeof excelData[0]?.A === 'string' && 
+                         typeof excelData[0]?.B === 'string' && 
+                         !isNaN(parseFloat(String(excelData[0]?.B).split(',')[0])) ? 0 : 1;
+        
         // Process each row
-        excelData.forEach((row, index) => {
-          // Get column names from the first row if they exist
-          const keys = Object.keys(row);
-          if (keys.length < 2) {
-            errorCount++;
-            console.error(`Ligne ${index+1}: Format invalide - pas assez de colonnes`);
-            return;
-          }
+        for (let i = startRow; i < excelData.length; i++) {
+          const row = excelData[i];
+          if (!row) continue;
           
-          // Get the first two columns (name and coordinates)
-          const locationName = row[keys[0]];
-          const coordinatesStr = row[keys[1]];
+          const locationName = row.A;
+          const coordinatesStr = row.B;
           
           if (!locationName || !coordinatesStr) {
             errorCount++;
-            console.error(`Ligne ${index+1}: Nom ou coordonnées manquants`);
-            return;
+            console.error(`Ligne ${i+1}: Nom ou coordonnées manquants`);
+            continue;
           }
           
           // Parse coordinates
@@ -196,8 +198,8 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
           
           if (coordParts.length !== 2) {
             errorCount++;
-            console.error(`Ligne ${index+1}: Format de coordonnées invalide: ${coordinatesStr}`);
-            return;
+            console.error(`Ligne ${i+1}: Format de coordonnées invalide: ${coordinatesStr}`);
+            continue;
           }
 
           const lat = parseFloat(coordParts[0]);
@@ -206,8 +208,8 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
           // Validate coordinates
           if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
             errorCount++;
-            console.error(`Ligne ${index+1}: Coordonnées hors limites: lat=${lat}, lng=${lng}`);
-            return;
+            console.error(`Ligne ${i+1}: Coordonnées hors limites: lat=${lat}, lng=${lng}`);
+            continue;
           }
 
           // Add this location to the map
@@ -220,7 +222,7 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
           
           importedCount++;
           console.log(`Ligne importée: ${locationName} (${lat}, ${lng})`);
-        });
+        }
 
         if (importedCount > 0) {
           toast.success(`${importedCount} emplacements importés depuis Excel`);
@@ -363,3 +365,4 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
 };
 
 export default LocationSearch;
+

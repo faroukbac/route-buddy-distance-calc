@@ -22,9 +22,6 @@ const DistanceMatrix = ({ locations, distanceMatrix }: DistanceMatrixProps) => {
     );
   }
 
-  // Créons une copie inversée des emplacements pour l'affichage des colonnes
-  const invertedLocations = [...locations].reverse();
-
   return (
     <div className="space-y-4">
       <div className="border rounded-md p-4 bg-blue-50">
@@ -45,31 +42,21 @@ const DistanceMatrix = ({ locations, distanceMatrix }: DistanceMatrixProps) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {invertedLocations.map((toLocation, rowIndex) => {
-              // Trouver l'index réel dans le tableau original des emplacements
-              const actualRowIndex = locations.length - 1 - rowIndex;
-              
-              return (
-                <TableRow key={rowIndex}>
-                  <TableCell className="font-medium bg-blue-50">
-                    {toLocation.name}
+            {locations.map((toLocation, rowIndex) => (
+              <TableRow key={rowIndex}>
+                <TableCell className="font-medium bg-blue-50">
+                  {toLocation.name}
+                </TableCell>
+                {locations.map((fromLocation, colIndex) => (
+                  <TableCell 
+                    key={colIndex}
+                    className={rowIndex === colIndex ? "bg-gray-100" : ""}
+                  >
+                    {rowIndex === colIndex ? "-" : distanceMatrix[colIndex][rowIndex].toFixed(2)}
                   </TableCell>
-                  {locations.map((fromLocation, colIndex) => {
-                    // Inversion de l'ordre pour l'affichage
-                    const cellValue = distanceMatrix[colIndex][actualRowIndex];
-                    
-                    return (
-                      <TableCell 
-                        key={colIndex}
-                        className={actualRowIndex === colIndex ? "bg-gray-100" : ""}
-                      >
-                        {actualRowIndex === colIndex ? "-" : cellValue.toFixed(2)}
-                      </TableCell>
-                    );
-                  })}
-                </TableRow>
-              );
-            })}
+                ))}
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </div>
