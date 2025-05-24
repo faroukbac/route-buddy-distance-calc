@@ -7,7 +7,6 @@ import { Plus, Trash, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { Location } from "@/types/location";
 import LocationSearch from './LocationSearch';
-import LocationConfirmDialog from './LocationConfirmDialog';
 
 interface LocationsInputProps {
   locations: Location[];
@@ -25,8 +24,6 @@ const LocationsInput = ({
   const [name, setName] = useState("");
   const [coordinates, setCoordinates] = useState("");
   const [isManualMode, setIsManualMode] = useState(false);
-  const [pendingLocation, setPendingLocation] = useState<Location | null>(null);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const handleAddLocation = () => {
     // Validation
@@ -61,39 +58,20 @@ const LocationsInput = ({
       return;
     }
 
-    // Set pending location and show confirmation dialog
-    setPendingLocation({ name, lat, lng });
-    setShowConfirmDialog(true);
+    // Add location directly
+    onAddLocation({ name, lat, lng });
+    
+    // Clear inputs
+    setName("");
+    setCoordinates("");
+    
+    toast.success(`Emplacement ajouté: ${name}`);
   };
 
   const handleLocationSelect = (name: string, lat: number, lng: number, address: string) => {
-    // Set pending location and show confirmation dialog
-    setPendingLocation({ name, lat, lng, address });
-    setShowConfirmDialog(true);
-  };
-
-  const handleConfirmLocation = () => {
-    if (pendingLocation) {
-      onAddLocation(pendingLocation);
-      
-      // Clear inputs if it was manual entry
-      if (isManualMode) {
-        setName("");
-        setCoordinates("");
-      }
-      
-      // Close dialog and clear pending location
-      setShowConfirmDialog(false);
-      setPendingLocation(null);
-      
-      toast.success(`Emplacement ajouté: ${pendingLocation.name}`);
-    }
-  };
-
-  const handleCancelLocation = () => {
-    // Close dialog and clear pending location
-    setShowConfirmDialog(false);
-    setPendingLocation(null);
+    // Add location directly without confirmation
+    onAddLocation({ name, lat, lng, address });
+    toast.success(`Emplacement ajouté: ${name}`);
   };
 
   return (
@@ -205,15 +183,6 @@ const LocationsInput = ({
           )}
         </div>
       </div>
-
-      {/* Confirmation Dialog */}
-      <LocationConfirmDialog 
-        location={pendingLocation}
-        open={showConfirmDialog}
-        onOpenChange={setShowConfirmDialog}
-        onConfirm={handleConfirmLocation}
-        onCancel={handleCancelLocation}
-      />
     </div>
   );
 };
