@@ -22,6 +22,9 @@ const DistanceMatrix = ({ locations, distanceMatrix }: DistanceMatrixProps) => {
     );
   }
 
+  // Inverser l'ordre des colonnes
+  const reversedLocations = [...locations].reverse();
+
   return (
     <div className="space-y-4">
       <div className="border rounded-md p-4 bg-blue-50">
@@ -34,7 +37,7 @@ const DistanceMatrix = ({ locations, distanceMatrix }: DistanceMatrixProps) => {
           <TableHeader>
             <TableRow>
               <TableHead className="min-w-[120px] bg-blue-50 font-medium">From \ To</TableHead>
-              {locations.map((location, index) => (
+              {reversedLocations.map((location, index) => (
                 <TableHead key={index} className="min-w-[120px] bg-blue-50 font-medium">
                   {location.name}
                 </TableHead>
@@ -47,14 +50,18 @@ const DistanceMatrix = ({ locations, distanceMatrix }: DistanceMatrixProps) => {
                 <TableCell className="font-medium bg-blue-50">
                   {fromLocation.name}
                 </TableCell>
-                {locations.map((toLocation, colIndex) => (
-                  <TableCell 
-                    key={colIndex}
-                    className={rowIndex === colIndex ? "bg-gray-100" : ""}
-                  >
-                    {rowIndex === colIndex ? "-" : distanceMatrix[rowIndex][colIndex].toFixed(2)}
-                  </TableCell>
-                ))}
+                {reversedLocations.map((toLocation, colIndex) => {
+                  // Trouver l'index original de la colonne inversée
+                  const originalColIndex = locations.length - 1 - colIndex;
+                  return (
+                    <TableCell 
+                      key={colIndex}
+                      className={rowIndex === originalColIndex ? "bg-gray-100" : ""}
+                    >
+                      {rowIndex === originalColIndex ? "-" : distanceMatrix[rowIndex][originalColIndex].toFixed(2)}
+                    </TableCell>
+                  );
+                })}
               </TableRow>
             ))}
           </TableBody>
