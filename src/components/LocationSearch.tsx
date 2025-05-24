@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -89,12 +88,6 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
     }
   };
 
-  const handleExcelFileSelect = () => {
-    if (excelFileInputRef.current) {
-      excelFileInputRef.current.click();
-    }
-  };
-
   const handleJsonFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) {
@@ -147,26 +140,26 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
     reader.readAsText(file);
   };
 
+  const handleExcelFileSelect = () => {
+    if (excelFileInputRef.current) {
+      excelFileInputRef.current.click();
+    }
+  };
+
   const handleExcelFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
+    if (!file) return;
 
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+
+        const rawData = XLSX.utils.sheet_to_json<{ [key: string]: any }>(worksheet, { header: 1 }); // tableau brut [[colA, colB], ...]
         
-        // Get the first worksheet
-        const firstSheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[firstSheetName];
-        
-        // Convert the worksheet to JSON with typed output
-        const excelData = XLSX.utils.sheet_to_json<ExcelRow>(worksheet, { header: 'A' });
-        
-        if (excelData.length === 0) {
+        if (!rawData || rawData.length === 0) {
           toast.error("Aucune donnée trouvée dans le fichier Excel");
           return;
         }
@@ -174,74 +167,56 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
         let importedCount = 0;
         let errorCount = 0;
 
-        // Skip header row if present - check if first row has numeric coordinates
-        const startRow = typeof excelData[0]?.A === 'string' && 
-                         typeof excelData[0]?.B === 'string' && 
-                         !isNaN(parseFloat(String(excelData[0]?.B).split(',')[0])) ? 0 : 1;
-        
-        // Process each row
-        for (let i = startRow; i < excelData.length; i++) {
-          const row = excelData[i];
-          if (!row) continue;
-          
-          const locationName = row.A;
-          const coordinatesStr = row.B;
-          
+        // Ignore la première ligne si elle contient des en-têtes
+        const startIndex = typeof rawData[0][1] === 'string' && rawData[0][1].includes(',') ? 0 : 1;
+
+        for (let i = startIndex; i < rawData.length; i++) {
+          const row = rawData[i];
+          const locationName = row?.[0];
+          const coordinatesStr = row?.[1];
+
           if (!locationName || !coordinatesStr) {
             errorCount++;
-            console.error(`Ligne ${i+1}: Nom ou coordonnées manquants`);
+            console.warn(`Ligne ${i + 1} : Données manquantes`);
             continue;
           }
-          
-          // Parse coordinates
+
           const coordParts = String(coordinatesStr).split(',').map(part => part.trim());
-          
           if (coordParts.length !== 2) {
             errorCount++;
-            console.error(`Ligne ${i+1}: Format de coordonnées invalide: ${coordinatesStr}`);
+            console.warn(`Ligne ${i + 1} : Format de coordonnées invalide`);
             continue;
           }
 
           const lat = parseFloat(coordParts[0]);
           const lng = parseFloat(coordParts[1]);
-          
-          // Validate coordinates
+
           if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
             errorCount++;
-            console.error(`Ligne ${i+1}: Coordonnées hors limites: lat=${lat}, lng=${lng}`);
+            console.warn(`Ligne ${i + 1} : Coordonnées hors limites`);
             continue;
           }
 
-          // Add this location to the map
-          onLocationSelect(
-            String(locationName),
-            lat,
-            lng,
-            `${locationName}, Emplacement importé`
-          );
-          
+          onLocationSelect(locationName, lat, lng, `${locationName}, Emplacement importé`);
+          console.log(`Emplacement importé : ${locationName} (${lat}, ${lng})`);
           importedCount++;
-          console.log(`Ligne importée: ${locationName} (${lat}, ${lng})`);
         }
 
         if (importedCount > 0) {
-          toast.success(`${importedCount} emplacements importés depuis Excel`);
+          toast.success(`${importedCount} emplacements importés avec succès.`);
         } else {
-          toast.error("Aucun emplacement valide trouvé dans le fichier Excel");
-        }
-        
-        if (errorCount > 0) {
-          toast.warning(`${errorCount} emplacements ont un format invalide et ont été ignorés`);
-        }
-        
-        // Reset the file input
-        if (event.target) {
-          event.target.value = '';
+          toast.error("Aucun emplacement valide trouvé.");
         }
 
+        if (errorCount > 0) {
+          toast.warning(`${errorCount} lignes ont été ignorées en raison d'erreurs.`);
+        }
+
+        // Réinitialisation du champ
+        event.target.value = '';
       } catch (error) {
-        toast.error("Échec de l'analyse du fichier Excel. Veuillez vérifier le format du fichier.");
-        console.error("Erreur d'analyse Excel:", error);
+        toast.error("Erreur lors de l'analyse du fichier Excel.");
+        console.error("Erreur:", error);
       }
     };
 
@@ -365,4 +340,3 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
 };
 
 export default LocationSearch;
-
