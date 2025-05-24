@@ -157,7 +157,7 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
         const workbook = XLSX.read(data, { type: 'array' });
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
 
-        const rawData = XLSX.utils.sheet_to_json<{ [key: string]: any }>(worksheet, { header: 1 }); // tableau brut [[colA, colB], ...]
+        const rawData = XLSX.utils.sheet_to_json<{ [key: string]: any }>(worksheet, { header: 1 });
         
         if (!rawData || rawData.length === 0) {
           toast.error("Aucune donnée trouvée dans le fichier Excel");
@@ -166,9 +166,10 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
 
         let importedCount = 0;
         let errorCount = 0;
+        const validLocations: Location[] = [];
 
         // Ignore la première ligne si elle contient des en-têtes
-        const startIndex = typeof rawData[0][1] === 'string' && rawData[0][1].includes(',') ? 0 : 1;
+        const startIndex = typeof rawData[0]?.[1] === 'string' && rawData[0][1].includes(',') ? 0 : 1;
 
         for (let i = startIndex; i < rawData.length; i++) {
           const row = rawData[i];
@@ -197,10 +198,22 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
             continue;
           }
 
-          onLocationSelect(locationName, lat, lng, `${locationName}, Emplacement importé`);
-          console.log(`Emplacement importé : ${locationName} (${lat}, ${lng})`);
+          // Ajouter à la liste des emplacements valides
+          validLocations.push({
+            name: String(locationName),
+            lat: lat,
+            lng: lng,
+            address: `${locationName}, Emplacement importé`
+          });
+          
+          console.log(`Emplacement validé : ${locationName} (${lat}, ${lng})`);
           importedCount++;
         }
+
+        // Importer tous les emplacements valides en une seule fois
+        validLocations.forEach(location => {
+          onLocationSelect(location.name, location.lat, location.lng, location.address || `${location.name}, Emplacement importé`);
+        });
 
         if (importedCount > 0) {
           toast.success(`${importedCount} emplacements importés avec succès.`);
