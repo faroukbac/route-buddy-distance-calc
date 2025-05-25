@@ -10,13 +10,6 @@ interface LocationSearchProps {
   onLocationSelect: (name: string, lat: number, lng: number, address: string) => void;
 }
 
-// Define an interface for Excel row data
-interface ExcelRow {
-  A: string | number;
-  B: string | number;
-  [key: string]: unknown; // To support other potential columns
-}
-
 const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -34,7 +27,7 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
     setIsSearching(true);
     try {
       // In a real implementation, this would call a geocoding API
-      // For demonstration, we'll simulate a search with random coordinates nearby
+      // For demonstration, we'll simulate a search with random coordinates
       setTimeout(() => {
         const randomLat = 40 + (Math.random() * 10 - 5);
         const randomLng = -74 + (Math.random() * 10 - 5);
@@ -126,7 +119,6 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
 
         toast.success(`Imported ${validLocations.length} locations from JSON`);
         
-        // Reset the file input so the same file can be selected again
         if (event.target) {
           event.target.value = '';
         }
@@ -156,80 +148,61 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-        const rawData = XLSX.utils.sheet_to_json<{ [key: string]: any }>(worksheet, { header: 1 });
-        
-        if (!rawData || rawData.length === 0) {
-          toast.error("Aucune donnée trouvée dans le fichier Excel");
+        if (!jsonData || jsonData.length === 0) {
+          toast.error("No data found in Excel file");
           return;
         }
 
-        let importedCount = 0;
+        let importCount = 0;
         let errorCount = 0;
-        const validLocations: Location[] = [];
 
-        // Ignore la première ligne si elle contient des en-têtes
-        const startIndex = typeof rawData[0]?.[1] === 'string' && rawData[0][1].includes(',') ? 0 : 1;
-
-        for (let i = startIndex; i < rawData.length; i++) {
-          const row = rawData[i];
-          const locationName = row?.[0];
-          const coordinatesStr = row?.[1];
-
-          if (!locationName || !coordinatesStr) {
+        jsonData.forEach((row: any) => {
+          // Check if the row has the required fields
+          if (!row.name || !row.latitude || !row.longitude) {
             errorCount++;
-            console.warn(`Ligne ${i + 1} : Données manquantes`);
-            continue;
+            return;
           }
 
-          const coordParts = String(coordinatesStr).split(',').map(part => part.trim());
-          if (coordParts.length !== 2) {
-            errorCount++;
-            console.warn(`Ligne ${i + 1} : Format de coordonnées invalide`);
-            continue;
-          }
+          const name = String(row.name);
+          const lat = parseFloat(row.latitude);
+          const lng = parseFloat(row.longitude);
 
-          const lat = parseFloat(coordParts[0]);
-          const lng = parseFloat(coordParts[1]);
-
+          // Validate coordinates
           if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
             errorCount++;
-            console.warn(`Ligne ${i + 1} : Coordonnées hors limites`);
-            continue;
+            return;
           }
 
-          // Ajouter à la liste des emplacements valides
-          validLocations.push({
-            name: String(locationName),
-            lat: lat,
-            lng: lng,
-            address: `${locationName}, Emplacement importé`
-          });
-          
-          console.log(`Emplacement validé : ${locationName} (${lat}, ${lng})`);
-          importedCount++;
-        }
-
-        // Importer tous les emplacements valides en une seule fois
-        validLocations.forEach(location => {
-          onLocationSelect(location.name, location.lat, location.lng, location.address || `${location.name}, Emplacement importé`);
+          // Add valid location
+          onLocationSelect(
+            name,
+            lat,
+            lng,
+            row.address ? String(row.address) : `${name}, Imported from Excel`
+          );
+          importCount++;
         });
 
-        if (importedCount > 0) {
-          toast.success(`${importedCount} emplacements importés avec succès.`);
-        } else {
-          toast.error("Aucun emplacement valide trouvé.");
+        if (importCount > 0) {
+          toast.success(`Successfully imported ${importCount} locations`);
         }
-
         if (errorCount > 0) {
-          toast.warning(`${errorCount} lignes ont été ignorées en raison d'erreurs.`);
+          toast.warning(`${errorCount} rows were skipped due to invalid data`);
+        }
+        if (importCount === 0) {
+          toast.error("No valid locations found in the file");
         }
 
-        // Réinitialisation du champ
-        event.target.value = '';
+        // Reset file input
+        if (event.target) {
+          event.target.value = '';
+        }
+
       } catch (error) {
-        toast.error("Erreur lors de l'analyse du fichier Excel.");
-        console.error("Erreur:", error);
+        console.error('Error parsing Excel file:', error);
+        toast.error("Failed to parse Excel file. Please check the format.");
       }
     };
 
