@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,15 +25,12 @@ const LocationsInput = ({
   const [isManualMode, setIsManualMode] = useState(false);
 
   const handleAddLocation = () => {
-    // Validation
     if (!name.trim()) {
       toast.error("Veuillez saisir un nom d'emplacement");
       return;
     }
 
-    // Parse coordinates from the single input field (format: "lat, lng")
     const coordParts = coordinates.split(',').map(part => part.trim());
-    
     if (coordParts.length !== 2) {
       toast.error("Les coordonnées doivent être au format 'latitude, longitude'");
       return;
@@ -58,20 +54,28 @@ const LocationsInput = ({
       return;
     }
 
-    // Add location directly
-    onAddLocation({ name, lat, lng });
-    
-    // Clear inputs
+    const names = name.split(',').map(n => n.trim()).filter(n => n !== '');
+    names.forEach(n => {
+      onAddLocation({ name: n, lat, lng });
+      toast.success(`Emplacement ajouté: ${n}`);
+    });
+
     setName("");
     setCoordinates("");
-    
-    toast.success(`Emplacement ajouté: ${name}`);
   };
 
   const handleLocationSelect = (name: string, lat: number, lng: number, address: string) => {
-    // Add location directly without confirmation
-    onAddLocation({ name, lat, lng, address });
-    toast.success(`Emplacement ajouté: ${name}`);
+    const names = name.split(',').map(n => n.trim()).filter(n => n !== '');
+
+    if (names.length > 1) {
+      names.forEach(n => {
+        onAddLocation({ name: n, lat, lng, address });
+        toast.success(`Emplacement ajouté : ${n}`);
+      });
+    } else {
+      onAddLocation({ name, lat, lng, address });
+      toast.success(`Emplacement ajouté : ${name}`);
+    }
   };
 
   return (
@@ -98,14 +102,14 @@ const LocationsInput = ({
               Saisie manuelle
             </Button>
           </div>
-          
+
           {isManualMode ? (
             <div className="grid gap-3 grid-cols-1 md:grid-cols-3">
               <div>
                 <Label htmlFor="name">Nom de l'emplacement</Label>
                 <Input
                   id="name"
-                  placeholder="Entrer le nom de l'emplacement"
+                  placeholder="Entrer le nom de l'emplacement (séparé par des virgules)"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
@@ -114,7 +118,7 @@ const LocationsInput = ({
                 <Label htmlFor="coordinates">Coordonnées (lat, lng)</Label>
                 <Input
                   id="coordinates"
-                  placeholder="ex: 35.33151545340188, -0.26259614606690074"
+                  placeholder="ex: 35.331515, -0.262596"
                   value={coordinates}
                   onChange={(e) => setCoordinates(e.target.value)}
                 />
