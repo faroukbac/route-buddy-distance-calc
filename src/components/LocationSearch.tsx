@@ -148,9 +148,9 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
-
-        if (!jsonData || jsonData.length === 0) {
+        const rawData = XLSX.utils.sheet_to_json<{ [key: string]: any }>(worksheet, { header: 1 });
+        
+        if (!rawData || rawData.length === 0) {
           toast.error("No data found in Excel file");
           return;
         }
@@ -158,21 +158,30 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
         let importCount = 0;
         let errorCount = 0;
 
-        jsonData.forEach((row: any) => {
-          // Check if the row has the required fields
-          if (!row.name || !row.latitude || !row.longitude) {
-            errorCount++;
-            return;
-          }
+        // Skip header row if it exists
+        const startRow = typeof rawData[0]?.[0] === 'string' && 
+                        (rawData[0][0].toLowerCase() === 'name' || 
+                         rawData[0][0].toLowerCase() === 'location') ? 1 : 0;
 
-          const name = String(row.name);
-          const lat = parseFloat(row.latitude);
-          const lng = parseFloat(row.longitude);
+        for (let i = startRow; i < rawData.length; i++) {
+          const row = rawData[i];
+          if (!row || !row[0] || !row[1]) continue;
+
+          const name = String(row[0]).trim();
+          const locationStr = String(row[1]).trim();
+          
+          // Split the location string into lat,lng
+          const [latStr, lngStr] = locationStr.split(',').map(s => s.trim());
+          
+          const lat = parseFloat(latStr);
+          const lng = parseFloat(lngStr);
 
           // Validate coordinates
-          if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+          if (isNaN(lat) || isNaN(lng) || 
+              lat < -90 || lat > 90 || 
+              lng < -180 || lng > 180) {
             errorCount++;
-            return;
+            continue;
           }
 
           // Add valid location
@@ -180,10 +189,10 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
             name,
             lat,
             lng,
-            row.address ? String(row.address) : `${name}, Imported from Excel`
+            `${name}, Imported from Excel`
           );
           importCount++;
-        });
+        }
 
         if (importCount > 0) {
           toast.success(`Successfully imported ${importCount} locations`);
