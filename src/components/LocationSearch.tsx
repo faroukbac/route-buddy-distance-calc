@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -148,70 +149,108 @@ const LocationSearch = ({ onLocationSelect }: LocationSearchProps) => {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rawData = XLSX.utils.sheet_to_json<{ [key: string]: any }>(worksheet, { header: 1 });
+        const rawData = XLSX.utils.sheet_to_json<any>(worksheet, { header: 1 });
         
         if (!rawData || rawData.length === 0) {
-          toast.error("No data found in Excel file");
+          toast.error("Aucune donnée trouvée dans le fichier Excel");
           return;
         }
+
+        console.log("Données brutes Excel:", rawData);
 
         let importCount = 0;
         let errorCount = 0;
 
-        // Skip header row if it exists
-        const startRow = typeof rawData[0]?.[0] === 'string' && 
-                        (rawData[0][0].toLowerCase() === 'name' || 
-                         rawData[0][0].toLowerCase() === 'location') ? 1 : 0;
+        // Détecter si la première ligne est un en-tête
+        const startRow = rawData.length > 0 && 
+                        rawData[0] && 
+                        typeof rawData[0][0] === 'string' && 
+                        (rawData[0][0].toLowerCase().includes('nom') || 
+                         rawData[0][0].toLowerCase().includes('name') ||
+                         rawData[0][0].toLowerCase().includes('location')) ? 1 : 0;
+
+        console.log("Début du traitement à la ligne:", startRow);
 
         for (let i = startRow; i < rawData.length; i++) {
           const row = rawData[i];
-          if (!row || !row[0] || !row[1]) continue;
+          console.log(`Traitement ligne ${i}:`, row);
+          
+          // Vérifier que la ligne a au moins 2 colonnes avec des données
+          if (!row || row.length < 2 || !row[0] || !row[1]) {
+            console.log(`Ligne ${i} ignorée - données manquantes:`, row);
+            continue;
+          }
 
           const name = String(row[0]).trim();
-          const locationStr = String(row[1]).trim();
+          const coordinatesStr = String(row[1]).trim();
           
-          // Split the location string into lat,lng
-          const [latStr, lngStr] = locationStr.split(',').map(s => s.trim());
+          console.log(`Nom: "${name}", Coordonnées: "${coordinatesStr}"`);
           
-          const lat = parseFloat(latStr);
-          const lng = parseFloat(lngStr);
-
-          // Validate coordinates
-          if (isNaN(lat) || isNaN(lng) || 
-              lat < -90 || lat > 90 || 
-              lng < -180 || lng > 180) {
+          // Vérifier que le nom n'est pas vide
+          if (!name) {
+            console.log(`Ligne ${i} ignorée - nom vide`);
             errorCount++;
             continue;
           }
 
-          // Add valid location
+          // Séparer les coordonnées
+          const coordParts = coordinatesStr.split(',');
+          if (coordParts.length !== 2) {
+            console.log(`Ligne ${i} ignorée - format coordonnées invalide:`, coordParts);
+            errorCount++;
+            continue;
+          }
+
+          const latStr = coordParts[0].trim();
+          const lngStr = coordParts[1].trim();
+          
+          const lat = parseFloat(latStr);
+          const lng = parseFloat(lngStr);
+
+          console.log(`Lat: ${lat}, Lng: ${lng}`);
+
+          // Valider les coordonnées
+          if (isNaN(lat) || isNaN(lng)) {
+            console.log(`Ligne ${i} ignorée - coordonnées NaN:`, { lat, lng });
+            errorCount++;
+            continue;
+          }
+
+          if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+            console.log(`Ligne ${i} ignorée - coordonnées hors limites:`, { lat, lng });
+            errorCount++;
+            continue;
+          }
+
+          // Ajouter la localisation valide
           onLocationSelect(
             name,
             lat,
             lng,
-            `${name}, Imported from Excel`
+            `${name}, Importé depuis Excel`
           );
           importCount++;
+          console.log(`Ligne ${i} importée avec succès: ${name}`);
         }
 
         if (importCount > 0) {
-          toast.success(`Successfully imported ${importCount} locations`);
+          toast.success(`${importCount} emplacements importés avec succès`);
         }
         if (errorCount > 0) {
-          toast.warning(`${errorCount} rows were skipped due to invalid data`);
+          toast.warning(`${errorCount} lignes ignorées à cause de données invalides`);
         }
         if (importCount === 0) {
-          toast.error("No valid locations found in the file");
+          toast.error("Aucun emplacement valide trouvé dans le fichier");
         }
 
-        // Reset file input
+        // Réinitialiser l'input fichier
         if (event.target) {
           event.target.value = '';
         }
 
       } catch (error) {
-        console.error('Error parsing Excel file:', error);
-        toast.error("Failed to parse Excel file. Please check the format.");
+        console.error('Erreur lors du traitement du fichier Excel:', error);
+        toast.error("Erreur lors du traitement du fichier Excel. Vérifiez le format.");
       }
     };
 
