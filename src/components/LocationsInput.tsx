@@ -6,6 +6,7 @@ import { Plus, Trash, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { Location } from "@/types/location";
 import LocationSearch from './LocationSearch';
+import GooglePlacesSearch from './GooglePlacesSearch';
 
 interface LocationsInputProps {
   locations: Location[];
@@ -23,6 +24,7 @@ const LocationsInput = ({
   const [name, setName] = useState("");
   const [coordinates, setCoordinates] = useState("");
   const [isManualMode, setIsManualMode] = useState(false);
+  const [searchMode, setSearchMode] = useState<'google' | 'basic'>('google');
 
   const handleAddLocation = () => {
     if (!name.trim()) {
@@ -83,15 +85,26 @@ const LocationsInput = ({
       <div className="grid gap-4 py-2">
         <div className="mb-4">
           <div className="flex justify-between mb-4">
-            <Button 
-              variant={isManualMode ? "outline" : "default"} 
-              onClick={() => setIsManualMode(false)}
-              size="sm"
-              className={!isManualMode ? "bg-blue-600 hover:bg-blue-700" : ""}
-            >
-              <MapPin className="h-4 w-4 mr-2" />
-              Rechercher un emplacement
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant={searchMode === 'google' ? "default" : "outline"} 
+                onClick={() => { setSearchMode('google'); setIsManualMode(false); }}
+                size="sm"
+                className={searchMode === 'google' ? "bg-blue-600 hover:bg-blue-700" : ""}
+              >
+                <MapPin className="h-4 w-4 mr-2" />
+                Google Places
+              </Button>
+              <Button 
+                variant={searchMode === 'basic' ? "default" : "outline"} 
+                onClick={() => { setSearchMode('basic'); setIsManualMode(false); }}
+                size="sm"
+                className={searchMode === 'basic' ? "bg-blue-600 hover:bg-blue-700" : ""}
+              >
+                <MapPin className="h-4 w-4 mr-2" />
+                Recherche Basique
+              </Button>
+            </div>
             <Button 
               variant={isManualMode ? "default" : "outline"} 
               onClick={() => setIsManualMode(true)}
@@ -132,6 +145,11 @@ const LocationsInput = ({
                 </Button>
               </div>
             </div>
+          ) : searchMode === 'google' ? (
+            <GooglePlacesSearch 
+              onLocationSelect={handleLocationSelect}
+              isGoogleMapsLoaded={typeof window !== 'undefined' && !!window.google}
+            />
           ) : (
             <LocationSearch onLocationSelect={handleLocationSelect} />
           )}

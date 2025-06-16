@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MapPin, Upload, DownloadCloud, Calculator, Map, BarChart3, Settings } from "lucide-react";
 import LocationsInput from "@/components/LocationsInput";
 import DistanceMatrix from "@/components/DistanceMatrix";
-import InteractiveMap from "@/components/InteractiveMap";
+import GoogleMap from "@/components/GoogleMap";
 import DistanceStatistics from "@/components/DistanceStatistics";
 import ExportOptions from "@/components/ExportOptions";
 import { toast } from "sonner";
@@ -52,14 +51,14 @@ const Index = () => {
             <MapPin className="h-8 w-8 text-blue-600 mr-2" />
             <h1 className="text-3xl md:text-4xl font-bold text-blue-800">Route Buddy</h1>
           </div>
-          <p className="text-lg text-blue-600">Calculateur de Distance Avancé</p>
+          <p className="text-lg text-blue-600">Calculateur de Distance Avancé avec Google Maps</p>
         </header>
 
         <Card className="shadow-lg border-blue-100">
           <CardHeader className="border-b pb-3">
             <CardTitle className="text-xl text-blue-700">Calculer les Itinéraires Entre Emplacements</CardTitle>
             <CardDescription>
-              Ajoutez des emplacements, calculez les distances, visualisez sur une carte et exportez les résultats
+              Ajoutez des emplacements avec Google Places, visualisez sur Google Maps et exportez les résultats
             </CardDescription>
           </CardHeader>
 
@@ -72,7 +71,7 @@ const Index = () => {
                 </TabsTrigger>
                 <TabsTrigger value="map" className="data-[state=active]:bg-blue-100">
                   <Map className="h-4 w-4 mr-2" />
-                  Carte
+                  Google Maps
                 </TabsTrigger>
                 <TabsTrigger value="results" className="data-[state=active]:bg-blue-100">
                   <Calculator className="h-4 w-4 mr-2" />
@@ -111,7 +110,7 @@ const Index = () => {
             </TabsContent>
 
             <TabsContent value="map" className="p-6">
-              <InteractiveMap 
+              <GoogleMap 
                 locations={locations} 
                 onLocationClick={handleLocationClick}
               />
