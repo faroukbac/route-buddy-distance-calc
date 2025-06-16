@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -21,11 +20,11 @@ const GooglePlacesSearch = ({ onLocationSelect, isGoogleMapsLoaded }: GooglePlac
 
   useEffect(() => {
     if (isGoogleMapsLoaded && window.google) {
-      autocompleteServiceRef.current = new google.maps.places.AutocompleteService();
+      autocompleteServiceRef.current = new window.google.maps.places.AutocompleteService();
       // Créer un div temporaire pour PlacesService
       const tempDiv = document.createElement('div');
-      const tempMap = new google.maps.Map(tempDiv);
-      placesServiceRef.current = new google.maps.places.PlacesService(tempMap);
+      const tempMap = new window.google.maps.Map(tempDiv);
+      placesServiceRef.current = new window.google.maps.places.PlacesService(tempMap);
     }
   }, [isGoogleMapsLoaded]);
 
@@ -45,7 +44,7 @@ const GooglePlacesSearch = ({ onLocationSelect, isGoogleMapsLoaded }: GooglePlac
         componentRestrictions: { country: 'dz' }, // Restreindre à l'Algérie
       },
       (predictions, status) => {
-        if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
+        if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
           setPredictions(predictions.slice(0, 5)); // Limiter à 5 résultats
           setShowPredictions(true);
         } else {
@@ -71,7 +70,7 @@ const GooglePlacesSearch = ({ onLocationSelect, isGoogleMapsLoaded }: GooglePlac
       (place, status) => {
         setIsSearching(false);
         
-        if (status === google.maps.places.PlacesServiceStatus.OK && place?.geometry?.location) {
+        if (status === window.google.maps.places.PlacesServiceStatus.OK && place?.geometry?.location) {
           const lat = place.geometry.location.lat();
           const lng = place.geometry.location.lng();
           const name = place.name || prediction.structured_formatting.main_text;

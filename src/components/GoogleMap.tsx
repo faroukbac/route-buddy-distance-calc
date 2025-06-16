@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Loader } from "@googlemaps/js-api-loader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,10 +32,10 @@ const GoogleMap = ({ locations, onLocationClick }: GoogleMapProps) => {
 
       await loader.load();
 
-      const map = new google.maps.Map(mapRef.current, {
+      const map = new window.google.maps.Map(mapRef.current, {
         zoom: 6,
         center: { lat: 28.0339, lng: 1.6596 }, // Centre de l'Algérie
-        mapTypeId: google.maps.MapTypeId.ROADMAP,
+        mapTypeId: window.google.maps.MapTypeId.ROADMAP,
         mapTypeControl: true,
         streetViewControl: true,
         fullscreenControl: true,
@@ -65,19 +64,19 @@ const GoogleMap = ({ locations, onLocationClick }: GoogleMapProps) => {
 
     if (locations.length === 0) return;
 
-    const bounds = new google.maps.LatLngBounds();
+    const bounds = new window.google.maps.LatLngBounds();
 
     // Créer de nouveaux marqueurs
     locations.forEach((location, index) => {
-      const marker = new google.maps.Marker({
+      const marker = new window.google.maps.Marker({
         position: { lat: location.lat, lng: location.lng },
         map: mapInstanceRef.current,
         title: location.name,
-        animation: google.maps.Animation.DROP,
+        animation: window.google.maps.Animation.DROP,
       });
 
       // InfoWindow pour chaque marqueur
-      const infoWindow = new google.maps.InfoWindow({
+      const infoWindow = new window.google.maps.InfoWindow({
         content: `
           <div style="font-family: Arial, sans-serif;">
             <h3 style="margin: 0 0 5px 0; color: #1f2937;">${location.name}</h3>
